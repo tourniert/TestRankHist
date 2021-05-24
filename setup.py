@@ -26,7 +26,7 @@ setup(name='testrankhist',
       project_urls={
         "Bug Tracker": "https://github.com/pypa/sampleproject/issues",
       },
-      install_requires=['numpy', 'scipy', 'matplotlib],
+      install_requires=['numpy', 'scipy', 'matplotlib'],
       package_dir={"": "src"},
       packages=setuptools.find_packages(where="src"),
       tests_require=['nose']

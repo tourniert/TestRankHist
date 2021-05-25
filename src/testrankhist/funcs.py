@@ -26,12 +26,29 @@ class TestRankHist:
         self.__E = (np.ones(self.__shape)*np.sum(self.hist)) / self.__shape
         self.__X = (self.hist - self.__E) / np.sqrt(self.__E)
 
+        # Calculation of chi2
         self.chisquare = ResultsJolliffePrimo(np.sum(self.__X**2),
-                                              1-chi2.cdf(np.sum(self.__X**2),
-                                                         df=self.__shape-1))
+                                              self.__shape-1)
 
+        # Creation of a non-orthonormal vector base
+        self.__basis = [self.__vec_linear(),
+                        self.__vec_Ushape(),
+                        self.__vec_wave()]
 
-    def linear(self):
+        # Apply Gram-Schmidt algorithm
+        self.__ortho_linear, self.__ortho_Ushape, self.__ortho_wave = self.__gramSchmidt()
+
+        # Calculation of statistics of chi2 component
+        self.__U_linear = np.sum(self.__ortho_linear * self.__X)**2
+        self.__U_Ushape = np.sum(self.__ortho_Ushape * self.__X)**2
+        self.__U_wave = np.sum(self.__ortho_wave * self.__X)**2
+
+        # Calculation
+        self.linear = ResultsJolliffePrimo(self.__U_linear, 1)
+        self.Ushape = ResultsJolliffePrimo(self.__U_Ushape, 1)
+        self.wave = ResultsJolliffePrimo(self.__U_wave, 1)
+
+    def __vec_linear(self):
         """
         Apply the Chi² test on linear vector.
 
@@ -49,72 +66,10 @@ class TestRankHist:
             b = 1
 
         I_lin = [a+_i*b for _i in range(self.__shape)]
-        I_lin = self.__normalizeI(I_lin)
-        U_linear = np.sum(I_lin * self.__X)**2
+        I_lin = self.__normalize(I_lin)
+        return I_lin
 
-        return ResultsJolliffePrimo(U_linear, 1-chi2.cdf(U_linear, df=1))
-
-
-    def ends(self):
-        """
-        Apply the Chi² test on ends vector.
-
-        Returns
-        -------
-        ResultsJolliffePrimo
-            Object with 2 attributes: statistic and p_value.
-
-        """
-        if self.__even:
-            a = self.__h - 1
-            b = 1
-        else:
-            a = 2*self.__h - 1
-            b = 2
-
-        I_ends = [-b for _i in range(self.__shape)]
-        I_ends[0] = a
-        I_ends[-1] = a
-        I_ends = self.__normalizeI(I_ends)
-        U_ends = np.sum(I_ends * self.__X)**2
-
-        return ResultsJolliffePrimo(U_ends, 1-chi2.cdf(U_ends, df=1))
-
-
-    def Vshape(self):
-        """
-        Apply the Chi² test on Vshape vector.
-
-        Returns
-        -------
-        ResultsJolliffePrimo
-            Object with 2 attributes: statistic and p_value.
-
-        """
-        if self.__even:
-            a = self.__h - 1
-            b = 2
-            I_Vshape = [a for _i in range(self.__shape//2)]
-            for _i in range(self.__shape//2):
-                I_Vshape[_i] -= _i*b
-            I_Vshape_rev = list(np.flip(I_Vshape))
-            I_Vshape = I_Vshape + I_Vshape_rev
-        else:
-            a = self.__h**2
-            b = 2*self.__h + 1
-            I_Vshape = [a for _i in range(self.__shape//2 + 1)]
-            for _i in range(self.__shape//2 + 1):
-                I_Vshape[_i] -= _i*b
-            I_Vshape_rev = list(np.flip(I_Vshape[:-1]))
-            I_Vshape = I_Vshape + I_Vshape_rev
-
-        I_Vshape = self.__normalizeI(I_Vshape)
-        U_Vshape = np.sum(I_Vshape * self.__X)**2
-
-        return ResultsJolliffePrimo(U_Vshape, 1-chi2.cdf(U_Vshape, df=1))
-
-
-    def Ushape(self):
+    def __vec_Ushape(self):
         """
         Apply the Chi² test on Ushape vector.
 
@@ -140,13 +95,10 @@ class TestRankHist:
             I_Ushape_rev = list(np.flip(I_Ushape[:-1]))
             I_Ushape = I_Ushape + I_Ushape_rev
 
-        I_Ushape = self.__normalizeI(I_Ushape)
-        U_Ushape = np.sum(I_Ushape * self.__X)**2
+        I_Ushape = self.__normalize(I_Ushape)
+        return I_Ushape
 
-        return ResultsJolliffePrimo(U_Ushape, 1-chi2.cdf(U_Ushape, df=1))
-
-
-    def wave(self):
+    def __vec_wave(self):
         """
         Apply the Chi² test on wave vector.
 
@@ -159,11 +111,11 @@ class TestRankHist:
         I_wave = [np.sin(2*np.pi * (_i/(self.__shape-1))) 
                   for _i in range(self.__shape)]
 
-        I_wave = self.__normalizeI(I_wave)
-        U_wave = np.sum(I_wave * self.__X)**2
+        I_wave = self.__normalize(I_wave)
+        return I_wave
+        # U_wave = np.sum(I_wave * self.__X)**2
 
-        return ResultsJolliffePrimo(U_wave, 1-chi2.cdf(U_wave, df=1))
-
+        # return ResultsJolliffePrimo(U_wave, 1-chi2.cdf(U_wave, df=1))
 
     def plot(self, x=None, ax=None, **fig_kw):
         """
@@ -185,39 +137,41 @@ class TestRankHist:
         Axis or figure with ranks histogram.
 
         """
-        p_chisq = round(self.chisquare.p_value, 3)
-        p_linear = round(self.linear().p_value, 3)
-        p_ends = round(self.ends().p_value, 3)
-        p_Vshape = round(self.Vshape().p_value, 3)
-        p_Ushape = round(self.Ushape().p_value, 3)
-        p_wave = round(self.wave().p_value, 3)
-
         if ax is None:
             fig, ax = plt.subplots(**fig_kw)
-    
+
         if x is None:
             x = [str(_i) for _i in range(1, self.__shape+1)]
-    
+
         # Plotting
         ax.bar(x, self.hist, color='grey')
         ax.axhline(y=self.__E[0], color='k', ls='--')
         ax.set_ylabel('Counts')
         ax.set_xlabel('Rank')
         ax.set_xticks(x[::2])
-        # ax.set_title('{}'.format(p_chisq))
-        ax.set_title('$\chi^2$: {}, Linear: {}, '.format(p_chisq, p_linear) +
-                     'Ends : {}, \n Vshape: {}, '.format(p_ends, p_Vshape) +
-                     'Ushape: {}, Wave: {}'.format(p_Ushape, p_wave))
+        ax.set_title('$\chi^2$: {}, '.format(self.chisquare.p_value) +
+                     'Linear: {}, '.format(self.linear.p_value) +
+                     '\n Ushape: {}, '.format(self.Ushape.p_value) +
+                     'Wave: {}'.format(self.wave.p_value))
 
+    def __normalize(self, vec):
+        vec = np.asarray(vec)
+        sum_squared = np.sum(vec**2)
+        return vec / np.sqrt(sum_squared)
 
-    def __normalizeI(self, I):
-        I = np.asarray(I)
-        sum_squared = np.sum(I**2)
-
-        return I / np.sqrt(sum_squared)
+    def __gramSchmidt(self):
+        basis = []
+        for _i, _vec in enumerate(self.__basis):
+            sum_proj = 0
+            for _j in range(_i):
+                sum_proj += np.dot(_vec, basis[_j])*basis[_j]
+            e = (_vec - sum_proj) / np.linalg.norm(_vec - sum_proj)
+            basis.append(e)
+        return basis
 
 
 class ResultsJolliffePrimo:
-    def __init__(self, statistic, p_value):
-        self.statistic = statistic
-        self.p_value = p_value
+    def __init__(self, U, df):
+
+        self.statistic = round(U, 3)
+        self.p_value = round(1-chi2.cdf(self.statistic, df=df), 3)

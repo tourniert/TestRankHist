@@ -28,6 +28,6 @@ setup(name='testrankhist',
       },
       install_requires=['numpy', 'scipy', 'matplotlib'],
       package_dir={"": "src"},
-      packages=setuptools.find_packages(where="src"),
+      packages=find_packages(where="src"),
       tests_require=['nose']
 )

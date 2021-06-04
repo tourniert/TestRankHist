@@ -24,7 +24,7 @@ setup(name='testrankhist',
       author_email='theo.tournier@meteo.fr',
       url='https://github.com/tourniert/TestRankHist',
       project_urls={
-        "Bug Tracker": "https://github.com/pypa/sampleproject/issues",
+        "Bug Tracker": "https://github.com/tourniert/TestRankHist/issues",
       },
       install_requires=['numpy', 'scipy', 'matplotlib'],
       package_dir={"": "src"},

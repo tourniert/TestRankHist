@@ -43,7 +43,7 @@ class TestRankHist:
         self.__U_Ushape = np.sum(self.__ortho_Ushape * self.__X)**2
         self.__U_wave = np.sum(self.__ortho_wave * self.__X)**2
 
-        # Calculation
+        # Calculation of final results
         self.linear = ResultsJolliffePrimo(self.__U_linear, 1)
         self.Ushape = ResultsJolliffePrimo(self.__U_Ushape, 1)
         self.wave = ResultsJolliffePrimo(self.__U_wave, 1)
@@ -108,7 +108,7 @@ class TestRankHist:
             Object with 2 attributes: statistic and p_value.
 
         """
-        I_wave = [np.sin(2*np.pi * (_i/(self.__shape-1))) 
+        I_wave = [np.sin(2*np.pi * (_i/(self.__shape-1)))
                   for _i in range(self.__shape)]
 
         I_wave = self.__normalize(I_wave)
